@@ -20,6 +20,8 @@ This tool is a **local bridge** between Claude Code and the TradingView Desktop 
 Contributions **must not** add features that:
 
 - **Connect directly to TradingView's servers** — all data access must go through the locally running Desktop app via CDP
+
+> **Fork note:** This is a fork of [tradingview-mcp-jackson](https://github.com/LewisWJackson/tradingview-mcp-jackson). For upstream contributions, submit PRs there.
 - **Bypass authentication or subscription restrictions** — this tool requires a valid TradingView account and subscription
 - **Scrape, cache, or redistribute market data** — no data storage, no databases, no export-to-CSV of price data
 - **Enable automated trading or order execution** — this is a chart reading/development tool, not a trading bot framework
@@ -35,6 +37,8 @@ npm install
 npm test          # 29 offline tests (no TradingView needed)
 tv status         # verify CDP connection (TradingView must be running)
 ```
+
+Full command reference: see [COMMANDS.md](COMMANDS.md)
 
 ## Pull Requests
 

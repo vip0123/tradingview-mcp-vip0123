@@ -1,8 +1,8 @@
-# TradingView MCP Jackson
+# TradingView MCP vip0123
 
-If you found this from the YouTube video — welcome. This is the improved fork. Everything you need is below.
+Fork of [tradingview-mcp-jackson](https://github.com/LewisWJackson/tradingview-mcp-jackson) which builds on the original [tradingview-mcp](https://github.com/tradesdontlie/tradingview-mcp) by [@tradesdontlie](https://github.com/tradesdontlie). Full credit to both for the foundation.
 
-Built on top of the original [tradingview-mcp](https://github.com/tradesdontlie/tradingview-mcp) by [@tradesdontlie](https://github.com/tradesdontlie). Full credit to them for the foundation. This fork adds a morning brief workflow, a rules config, and fixes the launch bug on TradingView Desktop v2.14+.
+This fork adds **unified CLI/MCP commands**, **Windows Store TradingView support**, an **enhanced PowerShell launcher**, and **VS Code Copilot integration** on top of the morning brief workflow.
 
 > [!WARNING]
 > **Not affiliated with TradingView Inc. or Anthropic.** This tool connects to your locally running TradingView Desktop app via Chrome DevTools Protocol. Review the [Disclaimer](#disclaimer) before use.
@@ -19,22 +19,30 @@ Built on top of the original [tradingview-mcp](https://github.com/tradesdontlie/
 
 | Feature | What it does |
 |---------|-------------|
-| `morning_brief` | One command that scans your watchlist, reads all your indicators, and returns structured data for Claude to generate your session bias |
+| **Unified CLI/MCP names** | MCP tool names (`tv_health_check`, `chart_get_state`) work as CLI commands too — see [COMMANDS.md](COMMANDS.md) |
+| **Windows Store support** | `launch_tv_debug.bat` and `TradingView.ps1` detect and launch the Microsoft Store version of TradingView |
+| **Enhanced launcher** | `TradingView.ps1` — kills existing processes, launches with CDP, waits for ready, validates chart target |
+| **VS Code Copilot MCP** | `.vscode/mcp.json` — use all 81 tools directly from VS Code Copilot Chat |
+| **Command reference** | [COMMANDS.md](COMMANDS.md) — complete mapping of all 81 MCP tools to CLI equivalents |
+| `morning_brief` | One command that scans your watchlist, reads all your indicators, and returns structured data for session bias |
 | `session_save` / `session_get` | Saves your daily brief to `~/.tradingview-mcp/sessions/` so you can compare today vs yesterday |
-| `rules.json` | Write your trading rules once — bias criteria, risk rules, watchlist. The morning brief applies them automatically every day |
+| `rules.json` | Write your trading rules once — bias criteria, risk rules, watchlist. Applied automatically by morning brief |
 | Launch bug fix | Fixed `tv_launch` compatibility with TradingView Desktop v2.14+ |
-| `tv brief` CLI | Run your morning brief from the terminal in one word |
+
+### Inherited from jackson fork
+- Morning brief workflow, rules config, `tv brief` CLI
+- All original 78 tools from tradingview-mcp
 
 ---
 
 ## One-Shot Setup
 
-Paste this into Claude Code and it will handle everything:
+Paste this into Claude Code / VS Code Copilot and it handles everything:
 
 ```
-Set up TradingView MCP Jackson for me. 
-Clone https://github.com/LewisWJackson/tradingview-mcp-jackson.git to ~/tradingview-mcp-jackson, run npm install, then add it to my MCP config at ~/.claude/.mcp.json (merge with any existing servers, don't overwrite them). 
-The config block is: { "mcpServers": { "tradingview": { "command": "node", "args": ["/Users/YOUR_USERNAME/tradingview-mcp-jackson/src/server.js"] } } } — replace YOUR_USERNAME with my actual username.
+Set up TradingView MCP for me. 
+Clone https://github.com/vip0123/tradingview-mcp-vip0123.git, run npm install, then add it to my MCP config at ~/.claude/.mcp.json (merge with existing servers). 
+The config block is: { "mcpServers": { "tradingview": { "command": "node", "args": ["FULL_PATH_TO/tradingview-mcp-vip0123/src/server.js"] } } } — replace FULL_PATH_TO with the actual path.
 Then copy rules.example.json to rules.json and open it so I can fill in my trading rules.
 Finally restart and verify with tv_health_check.
 ```
@@ -47,7 +55,7 @@ Or follow the manual steps below.
 
 - **TradingView Desktop app** (paid subscription required for real-time data)
 - **Node.js 18+**
-- **Claude Code** (for MCP tools) or any terminal (for CLI)
+- **Claude Code**, **VS Code with Copilot**, or any terminal (for CLI)
 - **macOS, Windows, or Linux**
 
 ---
@@ -57,8 +65,8 @@ Or follow the manual steps below.
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/LewisWJackson/tradingview-mcp-jackson.git ~/tradingview-mcp-jackson
-cd ~/tradingview-mcp-jackson
+git clone https://github.com/vip0123/tradingview-mcp-vip0123.git
+cd tradingview-mcp-vip0123
 npm install
 ```
 
@@ -77,14 +85,15 @@ Open `rules.json` and fill in:
 
 TradingView must be running with the debug port enabled.
 
+**Windows (recommended — supports Store version):**
+```powershell
+.\TradingView.ps1
+```
+Or use the batch file: `scripts\launch_tv_debug.bat`
+
 **Mac:**
 ```bash
 ./scripts/launch_tv_debug_mac.sh
-```
-
-**Windows:**
-```bash
-scripts\launch_tv_debug.bat
 ```
 
 **Linux:**
@@ -94,34 +103,40 @@ scripts\launch_tv_debug.bat
 
 Or use the MCP tool after setup: `"Use tv_launch to start TradingView in debug mode"`
 
-### 4. Add to Claude Code
+### 4. Add to your AI tool
 
-Add to `~/.claude/.mcp.json` (merge with any existing servers):
-
+**Claude Code** — add to `~/.claude/.mcp.json`:
 ```json
 {
   "mcpServers": {
     "tradingview": {
       "command": "node",
-      "args": ["/Users/YOUR_USERNAME/tradingview-mcp-jackson/src/server.js"]
+      "args": ["D:\\source\\repos\\tradingview-mcp-vip0123\\src\\server.js"]
     }
   }
 }
 ```
 
-Replace `YOUR_USERNAME` with your actual username. On Mac: `echo $USER` to check.
+**VS Code Copilot** — already configured in `.vscode/mcp.json` (works when you open this folder).
+
+Replace paths with your actual install location.
 
 ### 5. Verify
 
-Restart Claude Code, then ask: *"Use tv_health_check to verify TradingView is connected"*
-
-### 6. Run your first morning brief
-
-Ask Claude: *"Run morning_brief and give me my session bias"*
+Restart your AI tool, then ask: *"Use tv_health_check to verify TradingView is connected"*
 
 Or from the terminal:
 ```bash
-npm link  # install tv CLI globally (one time)
+npm link   # install tv CLI globally (one time)
+tv status
+```
+
+### 6. Run your first morning brief
+
+Ask your AI: *"Run morning_brief and give me my session bias"*
+
+Or from the terminal:
+```bash
 tv brief
 ```
 
@@ -267,22 +282,33 @@ Read `line.new()`, `label.new()`, `table.new()`, `box.new()` output from any vis
 
 ## CLI Commands
 
-```bash
-tv brief                           # run morning brief
-tv session get                     # get today's saved brief
-tv session save --brief "..."      # save a brief
+Both CLI shorthand and MCP tool names work interchangeably:
 
+```bash
+# CLI shorthand
 tv status                          # check connection
 tv quote                           # current price
+tv state                           # chart state + indicators
 tv symbol BTCUSD                   # change symbol
 tv ohlcv --summary                 # price summary
 tv screenshot -r chart             # capture chart
 tv pine compile                    # compile Pine Script
 tv pane layout 2x2                 # 4-chart grid
 tv stream quote | jq '.close'      # monitor price ticks
+tv brief                           # run morning brief
+tv session get                     # get today's saved brief
+
+# MCP tool names (same results)
+tv tv_health_check
+tv chart_get_state
+tv quote_get
+tv chart_set_symbol --symbol BTCUSD
+tv capture_screenshot --region chart
+tv pine_smart_compile
+tv morning_brief
 ```
 
-Full command list: `tv --help`
+Full command list: `tv --help` | Full reference: [COMMANDS.md](COMMANDS.md)
 
 ---
 
@@ -304,10 +330,13 @@ Full command list: `tv --help`
 ## Architecture
 
 ```
-Claude Code  ←→  MCP Server (stdio)  ←→  CDP (port 9222)  ←→  TradingView Desktop (Electron)
+Claude Code / VS Code Copilot  ←→  MCP Server (stdio)  ←→  CDP (port 9222)  ←→  TradingView Desktop
+                                                                                    (Electron / Store)
+CLI (tv command)  ←→  router.js + aliases.js  ←→  core/*.js  ←→  connection.js  ←→  ↑
 ```
 
 - **78 original tools** + **3 morning brief tools** = 81 MCP tools total
+- **Unified commands**: MCP tool names work as CLI commands via `aliases.js`
 - **Transport**: MCP over stdio + CLI (`tv` command)
 - **Connection**: Chrome DevTools Protocol on localhost:9222
 - **No external network calls** — everything runs locally
@@ -317,7 +346,8 @@ Claude Code  ←→  MCP Server (stdio)  ←→  CDP (port 9222)  ←→  Tradin
 
 ## Credits
 
-This fork is built on [tradingview-mcp](https://github.com/tradesdontlie/tradingview-mcp) by [@tradesdontlie](https://github.com/tradesdontlie). The original tool is the foundation — go star their repo.
+- [tradingview-mcp](https://github.com/tradesdontlie/tradingview-mcp) by [@tradesdontlie](https://github.com/tradesdontlie) — the original 78-tool foundation
+- [tradingview-mcp-jackson](https://github.com/LewisWJackson/tradingview-mcp-jackson) by [@LewisWJackson](https://github.com/LewisWJackson) — morning brief workflow, rules config, launch fix
 
 ---
 

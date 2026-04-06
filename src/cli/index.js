@@ -27,6 +27,9 @@ import "./commands/tab.js";
 import "./commands/stream.js";
 import "./commands/morning.js";
 
+// Register MCP tool name aliases (e.g., tv_health_check → status)
+import "./aliases.js";
+
 // Run
 import { run } from "./router.js";
 await run(process.argv);

@@ -1,7 +1,11 @@
 {
-  "name": "tradingview-mcp",
-  "version": "1.0.0",
-  "description": "MCP bridge for TradingView Desktop via Chrome DevTools Protocol",
+  "name": "tradingview-mcp-vip0123",
+  "version": "1.1.0",
+  "description": "MCP bridge for TradingView Desktop via Chrome DevTools Protocol — unified CLI/MCP commands, Windows Store support",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vip0123/tradingview-mcp-vip0123.git"
+  },
   "type": "module",
   "main": "src/server.js",
   "bin": {

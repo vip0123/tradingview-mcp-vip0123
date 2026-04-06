@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "tradingview": {
+      "command": "node",
+      "args": ["${workspaceFolder}/src/server.js"]
+    }
+  }
+}

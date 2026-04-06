@@ -17,7 +17,12 @@ if exist "%LOCALAPPDATA%\TradingView\TradingView.exe" set "TV_EXE=%LOCALAPPDATA%
 if exist "%PROGRAMFILES%\TradingView\TradingView.exe" set "TV_EXE=%PROGRAMFILES%\TradingView\TradingView.exe"
 if exist "%PROGRAMFILES(x86)%\TradingView\TradingView.exe" set "TV_EXE=%PROGRAMFILES(x86)%\TradingView\TradingView.exe"
 
-REM Check MSIX / Windows Store installs
+REM Check MSIX / Windows Store installs (use PowerShell to resolve, since dir requires admin for WindowsApps)
+if "%TV_EXE%"=="" (
+    for /f "tokens=*" %%i in ('powershell -NoProfile -Command "(Get-AppxPackage -Name 'TradingView.Desktop' 2>$null | Select-Object -First 1).InstallLocation" 2^>nul') do (
+        if exist "%%i\TradingView.exe" set "TV_EXE=%%i\TradingView.exe"
+    )
+)
 if "%TV_EXE%"=="" (
     for /f "tokens=*" %%i in ('dir /s /b "%PROGRAMFILES%\WindowsApps\TradingView*\TradingView.exe" 2^>nul') do set "TV_EXE=%%i"
 )
@@ -30,7 +35,7 @@ if "%TV_EXE%"=="" (
     echo Checked: %%LOCALAPPDATA%%\TradingView, %%PROGRAMFILES%%\TradingView, WindowsApps
     echo.
     echo If installed elsewhere, run manually:
-    echo   "C:\path\to\TradingView.exe" --remote-debugging-port=%PORT%
+    echo   "C:\Program Files\WindowsApps\TradingView.Desktop_3.0.0.7652_x64__n534cwy3pjxzj\TradingView.exe" --remote-debugging-port=%PORT%
     exit /b 1
 )
 

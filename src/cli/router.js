@@ -7,8 +7,15 @@ import { parseArgs } from 'node:util';
 /** @type {Map<string, { description: string, options?: object, handler: Function, subcommands?: Map<string, object> }>} */
 const commands = new Map();
 
+/** @type {Map<string, { cmd: string, sub?: string }>} MCP tool name → CLI command path */
+const aliases = new Map();
+
 export function register(name, config) {
   commands.set(name, config);
+}
+
+export function alias(mcpName, cmdName, subName) {
+  aliases.set(mcpName, { cmd: cmdName, sub: subName });
 }
 
 function printHelp() {
@@ -59,7 +66,21 @@ export async function run(argv) {
   }
 
   const cmdName = args[0];
-  const cmd = commands.get(cmdName);
+
+  // Resolve MCP tool name aliases (e.g., tv_health_check → status, chart_get_state → state)
+  const resolved = aliases.get(cmdName);
+  let effectiveCmd, effectiveArgs;
+  if (resolved) {
+    effectiveCmd = resolved.cmd;
+    effectiveArgs = resolved.sub ? [resolved.cmd, resolved.sub, ...args.slice(1)] : args;
+    effectiveArgs[0] = resolved.cmd;
+    if (resolved.sub) effectiveArgs.splice(1, 0, resolved.sub);
+  } else {
+    effectiveCmd = cmdName;
+    effectiveArgs = args;
+  }
+
+  const cmd = commands.get(effectiveCmd);
 
   if (!cmd) {
     console.error(`Unknown command: ${cmdName}`);
@@ -70,15 +91,15 @@ export async function run(argv) {
   // Handle subcommands (e.g., tv pine get)
   let handler, options;
   if (cmd.subcommands) {
-    const subName = args[1];
+    const subName = effectiveArgs[1];
     if (!subName || subName === '--help' || subName === '-h') {
-      printCommandHelp(cmdName, cmd);
+      printCommandHelp(effectiveCmd, cmd);
       process.exit(0);
     }
     const sub = cmd.subcommands.get(subName);
     if (!sub) {
-      console.error(`Unknown subcommand: ${cmdName} ${subName}`);
-      printCommandHelp(cmdName, cmd);
+      console.error(`Unknown subcommand: ${effectiveCmd} ${subName}`);
+      printCommandHelp(effectiveCmd, cmd);
       process.exit(1);
     }
     handler = sub.handler;
@@ -86,13 +107,13 @@ export async function run(argv) {
     // Parse remaining args after command + subcommand
     try {
       const { values, positionals } = parseArgs({
-        args: args.slice(2),
+        args: effectiveArgs.slice(2),
         options: { help: { type: 'boolean', short: 'h' }, ...options },
         allowPositionals: true,
         strict: false,
       });
       if (values.help) {
-        console.log(`Usage: tv ${cmdName} ${subName} [options]\n`);
+        console.log(`Usage: tv ${effectiveCmd} ${subName} [options]\n`);
         console.log(sub.description);
         if (Object.keys(options).length > 0) {
           console.log('\nOptions:');
@@ -112,13 +133,13 @@ export async function run(argv) {
     options = cmd.options || {};
     try {
       const { values, positionals } = parseArgs({
-        args: args.slice(1),
+        args: effectiveArgs.slice(1),
         options: { help: { type: 'boolean', short: 'h' }, ...options },
         allowPositionals: true,
         strict: false,
       });
       if (values.help) {
-        printCommandHelp(cmdName, cmd);
+        printCommandHelp(effectiveCmd, cmd);
         process.exit(0);
       }
       await execute(handler, values, positionals);
