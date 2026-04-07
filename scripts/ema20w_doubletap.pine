@@ -1,0 +1,103 @@
+//@version=6
+indicator("20W EMA Double Tap", overlay=true, max_labels_count=50, max_lines_count=10)
+
+// ─── Inputs ───────────────────────────────────────────────
+grpEMA  = "EMA Settings"
+emaLen  = input.int(20, "EMA Length (Weekly Bars)", minval=1, group=grpEMA)
+tapPct  = input.float(1.0, "Tap Zone (%)", minval=0.1, maxval=5.0, step=0.1, group=grpEMA, tooltip="How close price must come to EMA to count as a 'tap'")
+tapWindow = input.int(8, "Double-Tap Window (bars)", minval=2, maxval=20, group=grpEMA, tooltip="Max bars between first and second tap")
+
+grpVis  = "Display"
+showZone    = input.bool(true, "Show Tap Zone Band", group=grpVis)
+showTaps    = input.bool(true, "Show Tap Markers", group=grpVis)
+showTable   = input.bool(true, "Show Info Table", group=grpVis)
+zoneColor   = input.color(color.new(color.blue, 85), "Zone Color", group=grpVis)
+
+// ─── 20-Week EMA ──────────────────────────────────────────
+ema20 = ta.ema(close, emaLen)
+
+// ─── Tap Zone Calculation ─────────────────────────────────
+tapRange   = ema20 * (tapPct / 100)
+zoneUpper  = ema20 + tapRange
+zoneLower  = ema20 - tapRange
+
+// ─── Detect a "Tap" ──────────────────────────────────────
+// A tap = candle low dips into or below the EMA zone (within tapPct%)
+isTap = low <= zoneUpper and low >= (ema20 - tapRange * 2) and close > ema20 * 0.97
+
+// ─── Track Bars Since Last Tap ────────────────────────────
+var int barsSinceLastTap = 999
+var float lastTapLow = na
+
+if isTap and not isTap[1]  // New tap (not continuation)
+    barsSinceLastTap := 0
+    lastTapLow := low
+else
+    barsSinceLastTap += 1
+
+// ─── Double-Tap Detection ─────────────────────────────────
+// Second tap within the window, but not the same tap event
+isSecondTap = isTap and not isTap[1] and barsSinceLastTap[1] > 1 and barsSinceLastTap[1] <= tapWindow
+
+// For tracking: was there a double-tap recently?
+var bool doubleTapFired = false
+var int barsSinceDoubleTap = 999
+
+if isSecondTap
+    doubleTapFired := true
+    barsSinceDoubleTap := 0
+else
+    barsSinceDoubleTap += 1
+    if barsSinceDoubleTap > 3
+        doubleTapFired := false
+
+// ─── Bullish Confirmation ─────────────────────────────────
+// Double tap + bullish close above EMA = strong signal
+bullishConfirm = doubleTapFired and close > ema20 and close > open
+
+// ─── Plots ────────────────────────────────────────────────
+plot(ema20, "20W EMA", color=color.new(color.blue, 0), linewidth=3)
+
+// Tap zone band
+p_upper = plot(showZone ? zoneUpper : na, "Zone Upper", display=display.none)
+p_lower = plot(showZone ? zoneLower : na, "Zone Lower", display=display.none)
+fill(p_upper, p_lower, color=zoneColor, title="Tap Zone")
+
+// ─── Tap & Signal Markers ─────────────────────────────────
+plotshape(showTaps and isTap and not isTap[1] and not isSecondTap, title="First Tap", style=shape.circle, location=location.belowbar, color=color.new(color.yellow, 0), size=size.small, text="Tap 1")
+plotshape(showTaps and isSecondTap, title="Double Tap!", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), size=size.normal, text="2x TAP")
+plotshape(bullishConfirm, title="Bullish Confirm", style=shape.labelup, location=location.belowbar, color=color.new(color.green, 0), size=size.large, text="GO", textcolor=color.white)
+
+// ─── Bar Coloring ─────────────────────────────────────────
+barcolor(isSecondTap ? color.lime : bullishConfirm ? color.green : na, title="Signal Bar Color")
+
+// ─── Info Table ───────────────────────────────────────────
+var table infoTbl = table.new(position.top_right, 2, 5, bgcolor=color.new(color.black, 80), border_width=1, border_color=color.gray)
+if barstate.islast and showTable
+    // Distance from EMA
+    distPct = ((close - ema20) / ema20) * 100
+
+    table.cell(infoTbl, 0, 0, "20W EMA",    text_color=color.white, text_size=size.small)
+    table.cell(infoTbl, 1, 0, str.tostring(ema20, "#.##"), text_color=color.blue, text_size=size.small)
+
+    table.cell(infoTbl, 0, 1, "Distance",   text_color=color.white, text_size=size.small)
+    distColor = distPct > 0 ? color.green : distPct < -tapPct ? color.red : color.yellow
+    table.cell(infoTbl, 1, 1, str.tostring(distPct, "#.##") + "%", text_color=distColor, text_size=size.small)
+
+    table.cell(infoTbl, 0, 2, "In Zone?",   text_color=color.white, text_size=size.small)
+    inZone = math.abs(distPct) <= tapPct
+    table.cell(infoTbl, 1, 2, inZone ? "YES" : "NO", text_color=inZone ? color.yellow : color.gray, text_size=size.small)
+
+    table.cell(infoTbl, 0, 3, "Last Tap",   text_color=color.white, text_size=size.small)
+    tapText = barsSinceLastTap < 900 ? str.tostring(barsSinceLastTap) + " bars ago" : "None"
+    table.cell(infoTbl, 1, 3, tapText,      text_color=color.white, text_size=size.small)
+
+    table.cell(infoTbl, 0, 4, "Signal",     text_color=color.white, text_size=size.small)
+    sigText = doubleTapFired ? "DOUBLE TAP!" : inZone ? "Watching..." : "—"
+    sigColor = doubleTapFired ? color.lime : inZone ? color.yellow : color.gray
+    table.cell(infoTbl, 1, 4, sigText,      text_color=sigColor, text_size=size.small)
+
+// ─── Alerts ───────────────────────────────────────────────
+alertcondition(isTap and not isTap[1], title="EMA Tap", message="{{ticker}}: Price tapped the 20W EMA zone ({{close}})")
+alertcondition(isSecondTap, title="Double Tap!", message="{{ticker}}: DOUBLE TAP on 20W EMA! Price: {{close}}, EMA: " + str.tostring(ema20, "#.##"))
+alertcondition(bullishConfirm, title="Bullish Confirmation", message="{{ticker}}: Bullish confirmation after double-tap on 20W EMA. Close: {{close}}")
